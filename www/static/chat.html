@@ -1,0 +1,43 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>聊天室</title>
+    </head>
+    <body>
+        <div align="center">
+            <h1>聊天室</h1>
+            <h5>当前游客id
+                <input type="text" id="name" />
+                <input id="sendText" type="text" />
+                <button id="sendBtn">发送</button>
+                <button id="closeBtn" onclick="ws.close()">关闭连接</button>
+            </h5>
+        </div>
+        <br/>
+        <div id="recv"></div>
+    </body>
+    <script type="text/javascript">
+        /*
+            实现功能：
+            点击发送按钮获取文本框的内容并发送到服务器，
+            服务器将此消息原样返回并显示在页面。
+        */
+       document.getElementById("name").value=Math.floor(Math.random() * 10000) + 1;
+       var ws = new WebSocket("ws://127.0.0.1:8360/ws");
+       ws.onmessage = function (e) {
+           console.log(e)
+
+
+       }
+       document.querySelector('.sendBtn').onclick = function () {
+           let sendText = document.querySelector("input[name='sendText']").value
+           ws.send(JSON.stringify({
+                event: 'message',
+                data: {
+                    sendText: sendText
+                }
+           })
+           )
+       }
+    </script>
+</html>

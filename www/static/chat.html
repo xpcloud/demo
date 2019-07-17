@@ -7,15 +7,15 @@
         <div align="center">
             <h1>聊天室</h1>
             <h5>当前游客id
-                <input type="text" id="name" />
+                <input id="name" disabled/>
                 <input id="sendText" type="text" />
-                <button id="sendBtn">发送</button>
-                <button id="closeBtn" onclick="ws.close()">关闭连接</button>
+                <button id="sendBtn" onclick="send()">发送</button>
+                <button id="closeBtn" onclick="closeWebSocket()">关闭连接</button>
             </h5>
         </div>
         <br/>
-        <div id="recv"></div>
-    </body>
+        <div id="message" style="width: 100%"></div>
+	</body>
     <script type="text/javascript">
 		/*
 			本样例实现功能：
@@ -23,24 +23,66 @@
 			服务端将这条消息原样返回并显示在页面。
 			为了便于新手理解，服务端接口使用websocket官方服务
         */
-        document.getElementById("name").value=Math.floor(Math.random() * 10000) + 1;
-		var websocket=new WebSocket("ws://127.0.0.1:8360/ws");//创建一个websocket连接，服务端使用websocket官方服务
-		websocket.onopen=function(){        //websocket服务打开
-			console.log("websocket open");
-			document.getElementById("recv").innerHTML="connected";
+
+		var websocket=new WebSocket("ws://127.0.0.1:8360/ws");
+
+		const id = Math.round(Math.random() * 1000000)
+		document.getElementById('name').value = id
+
+		//websocket服务打开
+		websocket.onopen=function(){       
+			setMessageInnerHTML(`<div style="text-align: center">系统消息：WebSocket连接成功</div>`);
 		}
-		websocket.onclose=function(){     //websocket服务关闭
-			console.log("websocket close");
+		//websocket服务关闭
+		websocket.onclose=function() {
+			setMessageInnerHTML(`<div style="text-align: center">系统消息：WebSocket连接关闭</div>`)
+		}
+		//消息显示
+		function setMessageInnerHTML(innerHTML) {
+			document.getElementById('message').innerHTML += innerHTML;
+		}
+
+		//websocket服务关闭
+		function closeWebSocket() {
+			//websocket关闭之前发送下线消息
+			const body = { event: 'offline', data: { id: id } }
+			websocket.send(JSON.stringify(body));
+			websocket.close();
+		}
+		websocket.onmessage=function(event){  //websocket服务接收到消息
+			//debug
+			console.log(event);
+
+			const data = JSON.parse(event.data)
+
+			if(data.event === 'message') {
+				if(data.data.id === id) {
+					setMessageInnerHTML(`<div style="text-align: right">${data.data.time} 游客${data.data.id}</div>
+										 <div style="text-align: right; font-size: 25px">${data.data.message}</div>`);
+				} else {
+					setMessageInnerHTML(`<div style="text-align: left">游客${data.data.id} ${data.data.time} </div>
+										 <div style="text-align: left; font-size: 25px">${data.data.message}</div>`);
+				}
+			} else if (data.event === 'online') {
+				setMessageInnerHTML(`<div style="text-align: center">系统消息：${data.data}</div>`)
+			} else if (data.event === 'offline') {
+				setMessageInnerHTML(`<div style="text-align: center">系统消息：${data.data}</div>`)
+			} else if (data.event === 'open') {
+				//websocket建立成功后发送上线消息
+				const body = { event: 'online', data: { id: id } }
+				websocket.send(JSON.stringify(body));
+			}
 			
 		}
-		websocket.onmessage=function(e){  //websocket服务接收到消息
-			console.log(e.data);
-			document.getElementById("recv").innerHTML=e.data;//将消息显示在消息列表
-		}
-		document.getElementById("sendBtn").onclick=function(){
-			var txt=document.getElementById("sendText").value;
-			websocket.send(txt);//将文本输入框中的内容发送到服务端
-			
+		function send() {
+			if (document.getElementById('sendText').value === '') {
+				alert('发送消息不能为空！')
+				return
+			}
+			const data = { id: id, message: document.getElementById('sendText').value, time: Date()}
+			document.getElementById('sendText').value = '';
+			const body = { event: 'message', data: data }
+			websocket.send(JSON.stringify(body));
 		}
 	</script>
 </html>

@@ -119,7 +119,9 @@ exports.websocket = {
     messages: [{
       close: '/ws/close',
       open: '/ws/open',
-      message: '/ws/message'
+      message: '/ws/message',
+      online: 'ws/online',
+      offline: 'ws/offline'
     }]
   }
 }
